@@ -100,15 +100,29 @@ int main()
 		cerr<<"Err in train label file"<<endl;
 		return -1;
 	}
+
+
 	if (fread(&testImageMData, sizeof(ImageMetaData), 1, testImages) != 1)
 	{
 		cerr<<"Unable to get the Meta Data"<<endl;
 		return -1;
 	}
+	testImageMData.swap();
+	if (testImageMData.magicNum != IMAGE_MAGIC_NUM) {
+		cerr<<"Err in train label file"<<endl;
+		return -1;
+	}
+
+	
 	if (fread(&testLabelMData, sizeof(LabelMetaData), 1, testLabels) != 1)
 	{
 		cerr<<"Unable to get the Meta Data"<<endl;
 		return -1;
 	}
-
+	testLabelMData.swap();
+	if (testLabelMData.magicNum != LABEL_MAGIC_NUM) {
+		cerr<<"Err in train label file"<<endl;
+		return -1;
+	}
+	return 0;
 }
