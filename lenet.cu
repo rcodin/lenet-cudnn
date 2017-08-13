@@ -8,5 +8,5 @@
 int main()
 {
 	char* string;
-	cudaMalloc(&string, 1000*size(char));
+	cudaMalloc(&string, 1000*sizeof(char));
 }
