@@ -35,94 +35,83 @@ struct LabelMetaData {
 	}
 };
 
-
 using namespace std;
-int main()
+
+int readData(char *imagesFilePath, char *labelsFilePath,
+	uint8_t *data, uint8_t *labels, size_t &numImages, size_t &rows, size_t &cols)
 {
-	FILE* trainImages;
-	FILE* trainLabels;
-	FILE* testImages;
-	FILE* testLabels;
+	FILE* imagesFile;
+	FILE* labelsFile;
 
-	struct ImageMetaData trainImageMData;
-	struct ImageMetaData testImageMData;
-	
-	struct LabelMetaData trainLabelMData;
-	struct LabelMetaData testLabelMData;
-	// uint32_t magicTrainImages;
+	struct ImageMetaData imagesHeader;
+	struct LabelMetaData labelsHeader;	
 
-	//reading the files from disks
-	trainImages = fopen ("/home/roni/lenetPrac/train-images-idx3-ubyte" , "rb" );	
-	if (trainImages == NULL) {
-		cerr<<"Unable to read train image file"<<endl;
-		return -1;
-	}
-
-	trainLabels = fopen ("/home/roni/lenetPrac/train-labels-idx1-ubyte" , "rb" );
-	if (trainLabels == NULL) {
-		cerr<<"Unable to read train Labels file"<<endl;
-		return -1;
-	}
-	
-	testImages = fopen ("/home/roni/lenetPrac/t10k-images-idx3-ubyte" , "rb" );
-	if (testImages == NULL) {
-		cerr<<"Unable to open test image files"<<endl;
-		return -1;
-	}
-
-	testLabels = fopen ("/home/roni/lenetPrac/t10k-labels-idx1-ubyte" , "rb" );
-	if (testLabels == NULL) {
-		cerr<<"Unable to open test Labels file"<<endl;
+	imagesFile = fopen (imagesFilePath , "rb" );	
+	if (imagesFile == NULL) {
+		cerr<<"Unable to read image file"<<endl;
 		return -1;
 	}
 
 
-	//getting the metadata
-	if (fread(&trainImageMData, sizeof(ImageMetaData), 1, trainImages) != 1)
+
+	labelsFile = fopen (labelsFilePath, "rb" );
+	if (labelsFile == NULL) {
+		cerr<<"Unable to read Labels file"<<endl;
+		return -1;
+	}
+
+	//getting the header
+	if (fread(&imagesHeader, sizeof(ImageMetaData), 1, imagesFile) != 1)
 	{
-		cerr<<"Unable to get the train Image Meta Data"<<endl;
+		cerr<<"Unable to get the Image Meta Data"<<endl;
 		return -1;
 	}
-	trainImageMData.swap();
-	if (trainImageMData.magicNum != IMAGE_MAGIC_NUM)
+	imagesHeader.swap();
+	data = (uint8_t*)malloc(sizeof(uint8_t) * imagesHeader.numImages * imagesHeader.numRows * imagesHeader.numCols);
+	if (imagesHeader.magicNum != IMAGE_MAGIC_NUM)
 	{
 		cerr<<"Err in train image file"<<endl;
 		return -1;
 	}
 
-	if (fread(&trainLabelMData, sizeof(LabelMetaData), 1, trainLabels) != 1)
+	if (fread(&labelsHeader, sizeof(LabelMetaData), 1, labelsFile) != 1)
 	{
-		cerr<<"Unable to get the Meta Data"<<endl;
+		cerr<<"Unable to get the Image Meta Data"<<endl;
 		return -1;
 	}
-	trainLabelMData.swap();
-	if (trainLabelMData.magicNum != LABEL_MAGIC_NUM) {
-		cerr<<"Err in train label file"<<endl;
+	labelsHeader.swap();
+
+	labels = (uint8_t*)malloc(sizeof(uint8_t) * labelsHeader.numLabels);
+	if (labelsHeader.magicNum != LABEL_MAGIC_NUM)
+	{
+		cerr<<"Err in train image file"<<endl;
 		return -1;
 	}
 
-
-	if (fread(&testImageMData, sizeof(ImageMetaData), 1, testImages) != 1)
-	{
-		cerr<<"Unable to get the Meta Data"<<endl;
-		return -1;
-	}
-	testImageMData.swap();
-	if (testImageMData.magicNum != IMAGE_MAGIC_NUM) {
-		cerr<<"Err in train label file"<<endl;
-		return -1;
-	}
-
-	
-	if (fread(&testLabelMData, sizeof(LabelMetaData), 1, testLabels) != 1)
-	{
-		cerr<<"Unable to get the Meta Data"<<endl;
-		return -1;
-	}
-	testLabelMData.swap();
-	if (testLabelMData.magicNum != LABEL_MAGIC_NUM) {
-		cerr<<"Err in train label file"<<endl;
-		return -1;
-	}
-	return 0;
+	rows = imagesHeader.numRows;
+	cols = imagesHeader.numCols;
+	numImages = imagesHeader.numImages;
+	// Read images and labels (if requested)
+    if (data != nullptr)
+    {
+        if (fread(data, sizeof(uint8_t), imagesHeader.numImages * rows * cols, imagesFile)
+        											!= imagesHeader.numImages * rows * cols)
+        {
+            printf("ERROR: Invalid dataset file (partial image dataset)\n");
+            return 0;
+        }
+    }
+    if (labels != nullptr)
+    {
+        if (fread(labels, sizeof(uint8_t), labelsHeader.numLabels , labelsFile)
+        												!= labelsHeader.numLabels)
+        {
+            printf("ERROR: Invalid dataset file (partial label dataset)\n");
+            return 0;
+        }
+    }
+    
+	fclose(imagesFile);
+	fclose(labelsFile);
+	return 0;	
 }
